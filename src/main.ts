@@ -15,6 +15,7 @@ document.body.appendChild(canvas); //append it so it goes on screen
 //time to paint (simple marker drawing)
 let isDrawing = false; //will track mouse down or upppp
 const displayList: Array<Array<[number, number]>> = [];
+const undoStack: Array<Array<[number, number]>> = [];
 let currentLine: Array<[number, number]> | null = null;
 
 //make our redraw function
@@ -101,6 +102,36 @@ canvas.addEventListener("mouseout", () => {
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 
+function undo() {
+  if (displayList.length === 0) return;
+
+  const lastLine = displayList.pop();
+  if (lastLine) {
+    undoStack.push(lastLine);
+    canvas.dispatchEvent(new CustomEvent("drawing-changed"));
+  }
+}
+
+function redo() {
+  if (undoStack.length === 0) return;
+  const line = undoStack.pop();
+  if (line) {
+    displayList.push(line);
+    canvas.dispatchEvent(new CustomEvent("drawing-changed"));
+  }
+}
+
+//make the undo button
+const undoB = document.createElement("button");
+undoB.textContent = "Undo";
+undoB.addEventListener("click", undo);
+document.body.appendChild(undoB);
+
+const redoB = document.createElement("button");
+redoB.textContent = "Redo";
+redoB.addEventListener("click", redo);
+document.body.appendChild(redoB);
+
 //add the clear buttonnnnn
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -114,3 +145,5 @@ clearButton.addEventListener("click", () => {
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 document.body.appendChild(clearButton); //add that button to the screen
+
+canvas.addEventListener("drawing-changed", redraw);
