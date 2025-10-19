@@ -19,3 +19,32 @@ h1 {
   border-radius: 12px;
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
 }
+
+#sticker-pallete {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.sticker-button {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+.sticker-button.selected {
+  outline: 2px solid #31492e;
+  background: #a0c79b;
+  transform: scale(1.1);
+  transition: all 0.1s ease;
+}
+
+.sticker-button:hover {
+  transform: scale(1.1);
+  transition: transform 0.1s ease;
+}

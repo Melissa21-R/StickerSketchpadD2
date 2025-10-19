@@ -17,6 +17,11 @@ let isDrawing = false; //will track mouse down or upppp
 const displayList: Array<Array<[number, number]>> = [];
 const undoStack: Array<Array<[number, number]>> = [];
 let currentLine: Array<[number, number]> | null = null;
+//let selectedSticker: string | null = null;
+const stickers = ["🍄", "🌿", "🦋", "🪵", "🍀", "💧", "🌟", "🍃"];
+const stickerPallette = document.createElement("div");
+stickerPallette.id = "sticker-pallette";
+document.body.appendChild(stickerPallette);
 
 //make our redraw function
 function redraw() {
@@ -145,5 +150,20 @@ clearButton.addEventListener("click", () => {
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 document.body.appendChild(clearButton); //add that button to the screen
+
+//make sticker button
+stickers.forEach((sticker) => {
+  const emojiSticker = document.createElement("button");
+  emojiSticker.textContent = sticker;
+  emojiSticker.classList.add("sticker-button");
+  emojiSticker.addEventListener("click", () => {
+    //selectedSticker = sticker;
+    document.querySelectorAll(".sticker-button").forEach((btn) => {
+      btn.classList.remove("selected");
+    });
+    emojiSticker.classList.add("selected");
+  });
+  stickerPallette.appendChild(emojiSticker);
+});
 
 canvas.addEventListener("drawing-changed", redraw);
