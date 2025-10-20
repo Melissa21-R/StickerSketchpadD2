@@ -1,5 +1,38 @@
 import "./style.css";
 
+class DrawCommand {
+  private points: Array<[number, number]>;
+  private thickness: number;
+
+  constructor(initialX: number, initialY: number, thickness: number) {
+    this.points = [[initialX, initialY]];
+    this.thickness = thickness;
+  }
+
+  drag(x: number, y: number) {
+    this.points.push([x, y]);
+  }
+
+  isValid(): boolean {
+    return this.points.length > 1;
+  }
+
+  display(ctx: CanvasRenderingContext2D) {
+    if (this.points.length === 0) return;
+
+    ctx.lineWidth = this.thickness;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "black";
+
+    ctx.beginPath();
+    ctx.moveTo(this.points[0]![0], this.points[0]![1]);
+    for (let i = 1; i < this.points.length; i++) {
+      ctx.lineTo(this.points[i]![0], this.points[i]![1]);
+    }
+    ctx.stroke();
+  }
+}
+
 //make the title for the top of the screen
 const title = document.createElement("h1");
 title.textContent = "Sketch Pad";
@@ -14,14 +47,16 @@ document.body.appendChild(canvas); //append it so it goes on screen
 
 //time to paint (simple marker drawing)
 let isDrawing = false; //will track mouse down or upppp
-const displayList: Array<Array<[number, number]>> = [];
-const undoStack: Array<Array<[number, number]>> = [];
-let currentLine: Array<[number, number]> | null = null;
-//let selectedSticker: string | null = null;
+const displayList: DrawCommand[] = [];
+const undoStack: DrawCommand[] = [];
+let currentLine: DrawCommand | null = null;
+/*
+let selectedSticker: string | null = null;
 const stickers = ["🍄", "🌿", "🦋", "🪵", "🍀", "💧", "🌟", "🍃"];
 const stickerPallette = document.createElement("div");
 stickerPallette.id = "sticker-pallette";
 document.body.appendChild(stickerPallette);
+*/
 
 //make our redraw function
 function redraw() {
@@ -29,49 +64,38 @@ function redraw() {
 
   if (!ctx) return;
 
-  //styling the line
-  if (ctx) {
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
-  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx?.clearRect(0, 0, canvas.width, canvas.height);
-
-  displayList.forEach((line) => {
-    if (line.length === 0) {
-      return;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(line[0]![0], line[0]![1]);
-
-    for (let i = 1; i < line.length; i++) {
-      ctx.lineTo(line[i]![0], line[i]![1]);
-    }
-    ctx.stroke();
-  });
-
-  if (currentLine && currentLine.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(currentLine[0]![0], currentLine[0]![1]);
-
-    for (let i = 1; i < currentLine.length; i++) {
-      ctx.lineTo(currentLine[i]![0], currentLine[i]![1]);
-    }
-    ctx.stroke();
-  }
+  displayList.forEach((command) => command.display(ctx));
+  currentLine?.display(ctx);
 }
+
+/*
+  placedStickers.forEach((sticker) => {
+    ctx.font = "20px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(sticker.emoji, sticker.x, sticker.y);
+  });
+  */
 
 //add our drawing event listeners for mouse down and up
 canvas.addEventListener("mousedown", (e) => {
-  isDrawing = true;
-  currentLine = [];
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  currentLine.push([x, y]);
+  /*
+  if (selectedSticker) {
+    placedStickers.push({ x, y, emoji: selectedSticker });
+    canvas.dispatchEvent(new CustomEvent("drawing-changed"));
+    return;
+  }
+  */
+
+  isDrawing = true;
+  currentLine = new DrawCommand(x, y, 4);
+  currentLine?.drag(x, y);
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -80,14 +104,14 @@ canvas.addEventListener("mousemove", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  currentLine?.push([x, y]);
+  currentLine?.drag(x, y);
 
   redraw();
 });
 
 canvas.addEventListener("mouseup", () => {
   if (isDrawing && currentLine) {
-    if (currentLine.length > 0) {
+    if (currentLine && currentLine.isValid()) {
       displayList.push(currentLine);
     }
     currentLine = null;
@@ -98,7 +122,7 @@ canvas.addEventListener("mouseup", () => {
 
 canvas.addEventListener("mouseout", () => {
   if (isDrawing && currentLine) {
-    if (currentLine.length > 0) {
+    if (currentLine.isValid()) {
       displayList.push(currentLine);
     }
     currentLine = null;
@@ -146,18 +170,20 @@ clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   displayList.length = 0;
+  //placedStickers.length = 0;
   currentLine = null;
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 document.body.appendChild(clearButton); //add that button to the screen
 
+/*
 //make sticker button
 stickers.forEach((sticker) => {
   const emojiSticker = document.createElement("button");
   emojiSticker.textContent = sticker;
   emojiSticker.classList.add("sticker-button");
   emojiSticker.addEventListener("click", () => {
-    //selectedSticker = sticker;
+    selectedSticker = sticker;
     document.querySelectorAll(".sticker-button").forEach((btn) => {
       btn.classList.remove("selected");
     });
@@ -166,4 +192,8 @@ stickers.forEach((sticker) => {
   stickerPallette.appendChild(emojiSticker);
 });
 
+
+//stickers now show on notepad
+const placedStickers: Array<{ x: number; y: number; emoji: string }> = [];
+*/
 canvas.addEventListener("drawing-changed", redraw);
