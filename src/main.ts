@@ -33,6 +33,34 @@ class DrawCommand {
   }
 }
 
+class ToolPreview {
+  private x: number;
+  private y: number;
+  private thickness: number;
+
+  constructor(x: number, y: number, thickness: number) {
+    this.x = x;
+    this.y = y;
+    this.thickness = thickness;
+  }
+
+  update(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+
+  display(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "black";
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 //make the title for the top of the screen
 const title = document.createElement("h1");
 title.textContent = "Sketch Pad";
@@ -50,6 +78,7 @@ let isDrawing = false; //will track mouse down or upppp
 const displayList: DrawCommand[] = [];
 const undoStack: DrawCommand[] = [];
 let currentLine: DrawCommand | null = null;
+let toolPreview: ToolPreview | null = null;
 
 //set base drawing thickness
 let selectedThickness: number = 2;
@@ -70,6 +99,7 @@ function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   displayList.forEach((command) => command.display(ctx));
+  toolPreview?.display(ctx);
   currentLine?.display(ctx);
 }
 
@@ -102,13 +132,25 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (!isDrawing) return;
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  currentLine?.drag(x, y);
+  canvas.dispatchEvent(
+    new CustomEvent("tool-moved", {
+      detail: { x, y },
+    }),
+  );
 
+  if (isDrawing) {
+    currentLine?.drag(x, y);
+    redraw();
+  }
+});
+
+canvas.addEventListener("tool-moved", (e) => {
+  const { x, y } = (e as CustomEvent).detail;
+  toolPreview = new ToolPreview(x, y, selectedThickness);
   redraw();
 });
 
