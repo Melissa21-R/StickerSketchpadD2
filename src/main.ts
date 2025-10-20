@@ -33,6 +33,31 @@ class DrawCommand {
   }
 }
 
+class StickerCommand {
+  private point: [number, number];
+  private emoji: string;
+
+  constructor(x: number, y: number, emoji: string) {
+    this.point = [x, y];
+    this.emoji = emoji;
+  }
+
+  isValid(): boolean {
+    return true;
+  }
+
+  drag(x: number, y: number) {
+    this.point = [x, y];
+  }
+
+  display(ctx: CanvasRenderingContext2D) {
+    ctx.font = "20px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.emoji, this.point[0], this.point[1]);
+  }
+}
+
 class ToolPreview {
   private x: number;
   private y: number;
@@ -61,6 +86,27 @@ class ToolPreview {
   }
 }
 
+class StickerPreview {
+  private point: [number, number];
+  private emoji: string;
+
+  constructor(x: number, y: number, emoji: string) {
+    this.point = [x, y];
+    this.emoji = emoji;
+  }
+
+  update(x: number, y: number) {
+    this.point = [x, y];
+  }
+
+  display(ctx: CanvasRenderingContext2D) {
+    ctx.font = "20px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.emoji, this.point[0], this.point[1]);
+  }
+}
+
 //make the title for the top of the screen
 const title = document.createElement("h1");
 title.textContent = "Sketch Pad";
@@ -75,20 +121,19 @@ document.body.appendChild(canvas); //append it so it goes on screen
 
 //time to paint (simple marker drawing)
 let isDrawing = false; //will track mouse down or upppp
-const displayList: DrawCommand[] = [];
-const undoStack: DrawCommand[] = [];
-let currentLine: DrawCommand | null = null;
-let toolPreview: ToolPreview | null = null;
+const displayList: (DrawCommand | StickerCommand)[] = [];
+const undoStack: (DrawCommand | StickerCommand)[] = [];
+let currentCmd: DrawCommand | StickerCommand | null = null;
+let toolPreview: ToolPreview | StickerPreview | null = null;
 
 //set base drawing thickness
 let selectedThickness: number = 2;
-/*
+
 let selectedSticker: string | null = null;
 const stickers = ["🍄", "🌿", "🦋", "🪵", "🍀", "💧", "🌟", "🍃"];
 const stickerPallette = document.createElement("div");
 stickerPallette.id = "sticker-pallette";
 document.body.appendChild(stickerPallette);
-*/
 
 //make our redraw function
 function redraw() {
@@ -100,17 +145,8 @@ function redraw() {
 
   displayList.forEach((command) => command.display(ctx));
   toolPreview?.display(ctx);
-  currentLine?.display(ctx);
+  currentCmd?.display(ctx);
 }
-
-/*
-  placedStickers.forEach((sticker) => {
-    ctx.font = "20px serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(sticker.emoji, sticker.x, sticker.y);
-  });
-  */
 
 //add our drawing event listeners for mouse down and up
 canvas.addEventListener("mousedown", (e) => {
@@ -118,17 +154,15 @@ canvas.addEventListener("mousedown", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  /*
-  if (selectedSticker) {
-    placedStickers.push({ x, y, emoji: selectedSticker });
-    canvas.dispatchEvent(new CustomEvent("drawing-changed"));
-    return;
-  }
-  */
-
   isDrawing = true;
-  currentLine = new DrawCommand(x, y, selectedThickness);
-  currentLine?.drag(x, y);
+
+  if (selectedSticker) {
+    currentCmd = new StickerCommand(x, y, selectedSticker);
+  } else {
+    currentCmd = new DrawCommand(x, y, selectedThickness);
+  }
+
+  currentCmd?.drag(x, y);
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -143,34 +177,39 @@ canvas.addEventListener("mousemove", (e) => {
   );
 
   if (isDrawing) {
-    currentLine?.drag(x, y);
+    currentCmd?.drag(x, y);
     redraw();
   }
 });
 
 canvas.addEventListener("tool-moved", (e) => {
   const { x, y } = (e as CustomEvent).detail;
-  toolPreview = new ToolPreview(x, y, selectedThickness);
+
+  if (selectedSticker) {
+    toolPreview = new StickerPreview(x, y, selectedSticker);
+  } else {
+    toolPreview = new ToolPreview(x, y, selectedThickness);
+  }
   redraw();
 });
 
 canvas.addEventListener("mouseup", () => {
-  if (isDrawing && currentLine) {
-    if (currentLine && currentLine.isValid()) {
-      displayList.push(currentLine);
+  if (isDrawing && currentCmd) {
+    if (currentCmd && currentCmd.isValid()) {
+      displayList.push(currentCmd);
     }
-    currentLine = null;
+    currentCmd = null;
   }
   isDrawing = false;
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 
 canvas.addEventListener("mouseout", () => {
-  if (isDrawing && currentLine) {
-    if (currentLine.isValid()) {
-      displayList.push(currentLine);
+  if (isDrawing && currentCmd) {
+    if (currentCmd.isValid()) {
+      displayList.push(currentCmd);
     }
-    currentLine = null;
+    currentCmd = null;
   }
   isDrawing = false;
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
@@ -201,25 +240,33 @@ toolsDiv.textContent = "Markers: ";
 
 const thinBtn = document.createElement("button");
 thinBtn.textContent = "Thin Stroke";
+thinBtn.classList.add("tool-button");
 thinBtn.addEventListener("click", () => {
   selectedThickness = 2;
-  thinBtn.classList.add("selectedTool");
-  thickBtn.classList.remove("selectedTool");
+  selectedSticker = null;
+  document.querySelectorAll(".tool-button").forEach((btn) => {
+    btn.classList.remove("selected");
+  });
+  thinBtn.classList.add("selected");
 });
 
 const thickBtn = document.createElement("button");
 thickBtn.textContent = "Thick Stroke";
+thickBtn.classList.add("tool-button");
 thickBtn.addEventListener("click", () => {
   selectedThickness = 8;
-  thickBtn.classList.add("selectedTool");
-  thinBtn.classList.remove("selectedTool");
+  selectedSticker = null;
+  document.querySelectorAll(".tool-button").forEach((btn) => {
+    btn.classList.remove("selected");
+  });
+  thickBtn.classList.add("selected");
 });
 
 toolsDiv.appendChild(thinBtn);
 toolsDiv.appendChild(thickBtn);
 document.body.appendChild(toolsDiv);
 
-thinBtn.classList.add("selectedTool");
+thinBtn.classList.add("selected");
 
 //make the undo button
 const undoB = document.createElement("button");
@@ -241,21 +288,22 @@ clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   displayList.length = 0;
+  undoStack.length = 0;
   //placedStickers.length = 0;
-  currentLine = null;
+  currentCmd = null;
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
 document.body.appendChild(clearButton); //add that button to the screen
 
-/*
 //make sticker button
 stickers.forEach((sticker) => {
   const emojiSticker = document.createElement("button");
   emojiSticker.textContent = sticker;
   emojiSticker.classList.add("sticker-button");
+  emojiSticker.classList.add("tool-button");
   emojiSticker.addEventListener("click", () => {
     selectedSticker = sticker;
-    document.querySelectorAll(".sticker-button").forEach((btn) => {
+    document.querySelectorAll(".tool-button").forEach((btn) => {
       btn.classList.remove("selected");
     });
     emojiSticker.classList.add("selected");
@@ -263,8 +311,7 @@ stickers.forEach((sticker) => {
   stickerPallette.appendChild(emojiSticker);
 });
 
-
 //stickers now show on notepad
-const placedStickers: Array<{ x: number; y: number; emoji: string }> = [];
-*/
+//const placedStickers: Array<{ x: number; y: number; emoji: string }> = [];
+
 canvas.addEventListener("drawing-changed", redraw);
