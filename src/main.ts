@@ -50,6 +50,9 @@ let isDrawing = false; //will track mouse down or upppp
 const displayList: DrawCommand[] = [];
 const undoStack: DrawCommand[] = [];
 let currentLine: DrawCommand | null = null;
+
+//set base drawing thickness
+let selectedThickness: number = 2;
 /*
 let selectedSticker: string | null = null;
 const stickers = ["🍄", "🌿", "🦋", "🪵", "🍀", "💧", "🌟", "🍃"];
@@ -94,7 +97,7 @@ canvas.addEventListener("mousedown", (e) => {
   */
 
   isDrawing = true;
-  currentLine = new DrawCommand(x, y, 4);
+  currentLine = new DrawCommand(x, y, selectedThickness);
   currentLine?.drag(x, y);
 });
 
@@ -149,6 +152,32 @@ function redo() {
     canvas.dispatchEvent(new CustomEvent("drawing-changed"));
   }
 }
+
+//make thicknewss for drawing button
+const toolsDiv = document.createElement("div");
+toolsDiv.textContent = "Markers: ";
+
+const thinBtn = document.createElement("button");
+thinBtn.textContent = "Thin Stroke";
+thinBtn.addEventListener("click", () => {
+  selectedThickness = 2;
+  thinBtn.classList.add("selectedTool");
+  thickBtn.classList.remove("selectedTool");
+});
+
+const thickBtn = document.createElement("button");
+thickBtn.textContent = "Thick Stroke";
+thickBtn.addEventListener("click", () => {
+  selectedThickness = 8;
+  thickBtn.classList.add("selectedTool");
+  thinBtn.classList.remove("selectedTool");
+});
+
+toolsDiv.appendChild(thinBtn);
+toolsDiv.appendChild(thickBtn);
+document.body.appendChild(toolsDiv);
+
+thinBtn.classList.add("selectedTool");
 
 //make the undo button
 const undoB = document.createElement("button");

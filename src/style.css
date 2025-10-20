@@ -48,3 +48,8 @@ h1 {
   transform: scale(1.1);
   transition: transform 0.1s ease;
 }
+
+.selectedTool {
+  background-color: #a0c79b;
+  color: white;
+}
