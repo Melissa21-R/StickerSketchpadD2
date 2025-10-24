@@ -130,7 +130,16 @@ let toolPreview: ToolPreview | StickerPreview | null = null;
 let selectedThickness: number = 2;
 
 let selectedSticker: string | null = null;
-const stickers = ["🍄", "🌿", "🦋", "🪵", "🍀", "💧", "🌟", "🍃"];
+const stickers = [
+  { emoji: "🍄", label: "Mushroom" },
+  { emoji: "🌿", label: "Fern" },
+  { emoji: "🦋", label: "Butterfly" },
+  { emoji: "🪵", label: "Log" },
+  { emoji: "🍀", label: "Clover" },
+  { emoji: "💧", label: "Droplet" },
+  { emoji: "🌟", label: "Star" },
+  { emoji: "🍃", label: "Leaf" },
+];
 const stickerPallette = document.createElement("div");
 stickerPallette.id = "sticker-pallette";
 document.body.appendChild(stickerPallette);
@@ -295,6 +304,7 @@ clearButton.addEventListener("click", () => {
 });
 document.body.appendChild(clearButton); //add that button to the screen
 
+/*
 //make sticker button
 stickers.forEach((sticker) => {
   const emojiSticker = document.createElement("button");
@@ -309,6 +319,65 @@ stickers.forEach((sticker) => {
     emojiSticker.classList.add("selected");
   });
   stickerPallette.appendChild(emojiSticker);
+});
+*/
+
+//building sticker buttons from sticker array
+function createStickerButtons() {
+  stickerPallette.innerHTML = "";
+  stickers.forEach((preset) => {
+    const btn = document.createElement("button");
+    btn.textContent = preset.emoji;
+    btn.title = preset.label;
+    btn.classList.add("sticker-button", "tool-button");
+
+    btn.addEventListener("click", () => {
+      selectedSticker = preset.emoji;
+      document.querySelectorAll(".tool-button").forEach((b) => {
+        b.classList.remove("selected");
+      });
+      btn.classList.add("selected");
+    });
+    stickerPallette.appendChild(btn);
+  });
+}
+createStickerButtons();
+
+//custom stickers
+const customStickerDiv = document.createElement("div");
+customStickerDiv.textContent = "Add Sticker: ";
+
+const stickerInput = document.createElement("input");
+stickerInput.type = "text";
+stickerInput.placeholder = "e.g. 🦌";
+stickerInput.maxLength = 5;
+
+const addStickerBtn = document.createElement("button");
+addStickerBtn.textContent = "Add";
+
+customStickerDiv.appendChild(stickerInput);
+customStickerDiv.appendChild(addStickerBtn);
+document.body.appendChild(customStickerDiv);
+
+addStickerBtn.addEventListener("click", () => {
+  const newEmoji = stickerInput.value.trim();
+  if (!newEmoji) return;
+
+  const newStickerBtn = document.createElement("button");
+  newStickerBtn.textContent = newEmoji;
+  newStickerBtn.classList.add("sticker-button", "tool-button");
+  newStickerBtn.addEventListener("click", () => {
+    selectedSticker = newEmoji;
+    document.querySelectorAll(".tool-button").forEach((btn) => {
+      btn.classList.remove("selected");
+    });
+    newStickerBtn.classList.add("selected");
+  });
+
+  stickerPallette.appendChild(newStickerBtn);
+  stickers.push({ emoji: newEmoji, label: "Custom" });
+
+  stickerInput.value = "";
 });
 
 //stickers now show on notepad
