@@ -381,6 +381,7 @@ addStickerBtn.addEventListener("click", () => {
 });
 
 function exportDrawing() {
+  console.log("hi");
   const exportCanvas = document.createElement("canvas");
   exportCanvas.width = 1024;
   exportCanvas.height = 1024;
@@ -388,6 +389,8 @@ function exportDrawing() {
   if (!ctx) return;
 
   ctx.save();
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, 1024, 1024);
   ctx.scale(4, 4);
 
   displayList.forEach((command) => {
@@ -405,6 +408,8 @@ function exportDrawing() {
   const downloadLink = document.createElement("a");
   downloadLink.href = pngDataUrl;
   downloadLink.download = "sketchpad.png";
+  downloadLink.click();
+  downloadLink.remove();
 }
 
 const exportBtn = document.createElement("button");
