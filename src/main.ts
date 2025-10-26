@@ -380,6 +380,38 @@ addStickerBtn.addEventListener("click", () => {
   stickerInput.value = "";
 });
 
+function exportDrawing() {
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+  const ctx = exportCanvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.save();
+  ctx.scale(4, 4);
+
+  displayList.forEach((command) => {
+    if (command instanceof DrawCommand) {
+      command.display(ctx);
+    } else if (command instanceof StickerCommand) {
+      command.display(ctx);
+    }
+  });
+
+  ctx.restore();
+
+  const pngDataUrl = exportCanvas.toDataURL("image/png");
+
+  const downloadLink = document.createElement("a");
+  downloadLink.href = pngDataUrl;
+  downloadLink.download = "sketchpad.png";
+}
+
+const exportBtn = document.createElement("button");
+exportBtn.textContent = "Export (HD)";
+exportBtn.addEventListener("click", exportDrawing);
+document.body.appendChild(exportBtn);
+
 //stickers now show on notepad
 //const placedStickers: Array<{ x: number; y: number; emoji: string }> = [];
 
