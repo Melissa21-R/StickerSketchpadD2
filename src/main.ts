@@ -6,10 +6,17 @@ controlDiv.classList.add("control-panel");
 class DrawCommand {
   private points: Array<[number, number]>;
   private thickness: number;
+  private color: string;
 
-  constructor(initialX: number, initialY: number, thickness: number) {
+  constructor(
+    initialX: number,
+    initialY: number,
+    thickness: number,
+    color: string,
+  ) {
     this.points = [[initialX, initialY]];
     this.thickness = thickness;
+    this.color = color;
   }
 
   drag(x: number, y: number) {
@@ -25,7 +32,7 @@ class DrawCommand {
 
     ctx.lineWidth = this.thickness;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = this.color;
 
     ctx.beginPath();
     ctx.moveTo(this.points[0]![0], this.points[0]![1]);
@@ -66,11 +73,13 @@ class ToolPreview {
   private x: number;
   private y: number;
   private thickness: number;
+  private color: string;
 
-  constructor(x: number, y: number, thickness: number) {
+  constructor(x: number, y: number, thickness: number, color: string) {
     this.x = x;
     this.y = y;
     this.thickness = thickness;
+    this.color = color;
   }
 
   update(x: number, y: number) {
@@ -81,8 +90,8 @@ class ToolPreview {
   display(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.lineWidth = 2;
-    ctx.strokeStyle = "black";
-    ctx.fillStyle = "black";
+    ctx.strokeStyle = this.color;
+    ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
     ctx.stroke();
@@ -140,6 +149,7 @@ let toolPreview: ToolPreview | StickerPreview | null = null;
 
 //set base drawing thickness
 let selectedThickness: number = 2;
+let selectedColor: string = "black";
 
 let selectedSticker: string | null = null;
 const stickers = [
@@ -181,7 +191,7 @@ canvas.addEventListener("mousedown", (e) => {
   if (selectedSticker) {
     currentCmd = new StickerCommand(x, y, selectedSticker);
   } else {
-    currentCmd = new DrawCommand(x, y, selectedThickness);
+    currentCmd = new DrawCommand(x, y, selectedThickness, selectedColor);
   }
 
   currentCmd?.drag(x, y);
@@ -210,7 +220,7 @@ canvas.addEventListener("tool-moved", (e) => {
   if (selectedSticker) {
     toolPreview = new StickerPreview(x, y, selectedSticker);
   } else {
-    toolPreview = new ToolPreview(x, y, selectedThickness);
+    toolPreview = new ToolPreview(x, y, selectedThickness, selectedColor);
   }
   redraw();
 });
@@ -256,7 +266,15 @@ function redo() {
   }
 }
 
-//make thicknewss for drawing button
+function randomColor() {
+  const r = Math.floor(Math.random() * 255);
+  const g = Math.floor(Math.random() * 255);
+  const b = Math.floor(Math.random() * 255);
+
+  selectedColor = "rgb(" + r + "," + g + "," + b + ")";
+}
+
+//make thickness for drawing button
 const toolsDiv = document.createElement("div");
 toolsDiv.textContent = "Markers: ";
 
@@ -264,6 +282,7 @@ const thinBtn = document.createElement("button");
 thinBtn.textContent = "Thin Stroke";
 thinBtn.classList.add("tool-button");
 thinBtn.addEventListener("click", () => {
+  randomColor();
   selectedThickness = 3;
   selectedSticker = null;
   document.querySelectorAll(".tool-button").forEach((btn) => {
@@ -276,6 +295,7 @@ const thickBtn = document.createElement("button");
 thickBtn.textContent = "Thick Stroke";
 thickBtn.classList.add("tool-button");
 thickBtn.addEventListener("click", () => {
+  randomColor();
   selectedThickness = 10;
   selectedSticker = null;
   document.querySelectorAll(".tool-button").forEach((btn) => {
