@@ -1,5 +1,8 @@
 import "./style.css";
 
+const controlDiv = document.createElement("div");
+controlDiv.classList.add("control-panel");
+
 class DrawCommand {
   private points: Array<[number, number]>;
   private thickness: number;
@@ -53,6 +56,7 @@ class StickerCommand {
   display(ctx: CanvasRenderingContext2D) {
     ctx.font = "20px serif";
     ctx.textAlign = "center";
+    ctx.fillStyle = "black";
     ctx.textBaseline = "middle";
     ctx.fillText(this.emoji, this.point[0], this.point[1]);
   }
@@ -78,6 +82,7 @@ class ToolPreview {
     ctx.save();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
     ctx.stroke();
@@ -101,6 +106,7 @@ class StickerPreview {
 
   display(ctx: CanvasRenderingContext2D) {
     ctx.font = "20px serif";
+    ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(this.emoji, this.point[0], this.point[1]);
@@ -118,6 +124,12 @@ canvas.width = 256;
 canvas.height = 256;
 canvas.id = "skCanvas"; //making it easy to style
 document.body.appendChild(canvas); //append it so it goes on screen
+const ctx = canvas.getContext("2d");
+
+if (ctx) {
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
 
 //time to paint (simple marker drawing)
 let isDrawing = false; //will track mouse down or upppp
@@ -142,7 +154,7 @@ const stickers = [
 ];
 const stickerPallette = document.createElement("div");
 stickerPallette.id = "sticker-pallette";
-document.body.appendChild(stickerPallette);
+stickerPallette.classList.add("sticker-pallette");
 
 //make our redraw function
 function redraw() {
@@ -150,7 +162,8 @@ function redraw() {
 
   if (!ctx) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   displayList.forEach((command) => command.display(ctx));
   toolPreview?.display(ctx);
@@ -251,7 +264,7 @@ const thinBtn = document.createElement("button");
 thinBtn.textContent = "Thin Stroke";
 thinBtn.classList.add("tool-button");
 thinBtn.addEventListener("click", () => {
-  selectedThickness = 2;
+  selectedThickness = 3;
   selectedSticker = null;
   document.querySelectorAll(".tool-button").forEach((btn) => {
     btn.classList.remove("selected");
@@ -263,7 +276,7 @@ const thickBtn = document.createElement("button");
 thickBtn.textContent = "Thick Stroke";
 thickBtn.classList.add("tool-button");
 thickBtn.addEventListener("click", () => {
-  selectedThickness = 8;
+  selectedThickness = 10;
   selectedSticker = null;
   document.querySelectorAll(".tool-button").forEach((btn) => {
     btn.classList.remove("selected");
@@ -273,24 +286,27 @@ thickBtn.addEventListener("click", () => {
 
 toolsDiv.appendChild(thinBtn);
 toolsDiv.appendChild(thickBtn);
-document.body.appendChild(toolsDiv);
+thinBtn.classList.add("selected"); // Highlight default
+toolsDiv.classList.add("horizontalDiv");
 
-thinBtn.classList.add("selected");
+const actionDiv = document.createElement("div");
+actionDiv.classList.add("action-group");
 
 //make the undo button
 const undoB = document.createElement("button");
 undoB.textContent = "Undo";
+undoB.classList.add("action-button");
 undoB.addEventListener("click", undo);
-document.body.appendChild(undoB);
 
 const redoB = document.createElement("button");
 redoB.textContent = "Redo";
+redoB.classList.add("action-button");
 redoB.addEventListener("click", redo);
-document.body.appendChild(redoB);
 
 //add the clear buttonnnnn
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
+clearButton.classList.add("action-button"); //add that button to the screen
 clearButton.addEventListener("click", () => {
   const ctx = canvas.getContext("2d");
   if (ctx) {
@@ -302,25 +318,11 @@ clearButton.addEventListener("click", () => {
   currentCmd = null;
   canvas.dispatchEvent(new CustomEvent("drawing-changed"));
 });
-document.body.appendChild(clearButton); //add that button to the screen
 
-/*
-//make sticker button
-stickers.forEach((sticker) => {
-  const emojiSticker = document.createElement("button");
-  emojiSticker.textContent = sticker;
-  emojiSticker.classList.add("sticker-button");
-  emojiSticker.classList.add("tool-button");
-  emojiSticker.addEventListener("click", () => {
-    selectedSticker = sticker;
-    document.querySelectorAll(".tool-button").forEach((btn) => {
-      btn.classList.remove("selected");
-    });
-    emojiSticker.classList.add("selected");
-  });
-  stickerPallette.appendChild(emojiSticker);
-});
-*/
+actionDiv.appendChild(undoB);
+actionDiv.appendChild(redoB);
+actionDiv.classList.add("horizontalDiv");
+actionDiv.appendChild(clearButton);
 
 //building sticker buttons from sticker array
 function createStickerButtons() {
@@ -354,10 +356,10 @@ stickerInput.maxLength = 5;
 
 const addStickerBtn = document.createElement("button");
 addStickerBtn.textContent = "Add";
+addStickerBtn.classList.add("action-button");
 
 customStickerDiv.appendChild(stickerInput);
-customStickerDiv.appendChild(addStickerBtn);
-document.body.appendChild(customStickerDiv);
+customStickerDiv.classList.add("horizontalDiv");
 
 addStickerBtn.addEventListener("click", () => {
   const newEmoji = stickerInput.value.trim();
@@ -379,6 +381,8 @@ addStickerBtn.addEventListener("click", () => {
 
   stickerInput.value = "";
 });
+
+customStickerDiv.appendChild(addStickerBtn);
 
 function exportDrawing() {
   console.log("hi");
@@ -414,8 +418,16 @@ function exportDrawing() {
 
 const exportBtn = document.createElement("button");
 exportBtn.textContent = "Export (HD)";
+exportBtn.classList.add("action-button");
 exportBtn.addEventListener("click", exportDrawing);
-document.body.appendChild(exportBtn);
+
+controlDiv.appendChild(stickerPallette);
+controlDiv.appendChild(toolsDiv);
+controlDiv.appendChild(customStickerDiv);
+controlDiv.appendChild(actionDiv);
+controlDiv.appendChild(exportBtn);
+
+document.body.appendChild(controlDiv);
 
 //stickers now show on notepad
 //const placedStickers: Array<{ x: number; y: number; emoji: string }> = [];
